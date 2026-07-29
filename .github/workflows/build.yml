@@ -1,0 +1,61 @@
+name: Build Release Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Create release package
+      run: |
+        VERSION=$(cat version.txt 2>/dev/null || echo "1.0.0")
+        PACKAGE_NAME="linux-keylogger-${VERSION}"
+        
+        # Create directory structure
+        mkdir -p release/${PACKAGE_NAME}
+        
+        # Copy files
+        cp keylogger.py release/${PACKAGE_NAME}/
+        cp install.sh release/${PACKAGE_NAME}/
+        cp requirements.txt release/${PACKAGE_NAME}/
+        cp config.ini release/${PACKAGE_NAME}/
+        cp version.txt release/${PACKAGE_NAME}/
+        cp README.md release/${PACKAGE_NAME}/
+        cp uninstall.sh release/${PACKAGE_NAME}/
+        
+        # Make scripts executable
+        chmod +x release/${PACKAGE_NAME}/install.sh
+        chmod +x release/${PACKAGE_NAME}/uninstall.sh
+        
+        # Create tarball
+        cd release
+        tar -czf ${PACKAGE_NAME}.tar.gz ${PACKAGE_NAME}/
+        
+        # Create checksum
+        sha256sum ${PACKAGE_NAME}.tar.gz > ${PACKAGE_NAME}.sha256
+        
+        echo "PACKAGE_NAME=${PACKAGE_NAME}" >> $GITHUB_ENV
+    
+    - name: Upload to GitHub Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          release/linux-keylogger-*.tar.gz
+          release/linux-keylogger-*.sha256
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Upload as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: linux-keylogger-package
+        path: release/linux-keylogger-*.tar.gz

@@ -1,25 +1,19 @@
-# Core dependencies
+# Core Requirements
 pynput>=1.7.0
 evdev>=1.6.0
 mss>=6.0.0
 Pillow>=8.0.0
 
-# Screen recording
+# Screen Recording
 opencv-python>=4.5.0
 numpy>=1.19.0
 
-# Audio recording
+# Audio Recording
 sounddevice>=0.4.0
 soundfile>=0.10.0
 pyaudio>=0.2.11
 
-# Networking
+# Networking & Utilities
 requests>=2.25.0
 pyperclip>=1.8.0
 psutil>=5.8.0
-
-# X11/Wayland support
-python-xlib>=0.31
-
-# Additional
-schedule>=1.1.0

